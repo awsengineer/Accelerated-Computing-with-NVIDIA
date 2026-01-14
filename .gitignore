@@ -1,18 +1,24 @@
 # Compiled binaries
-add
-add_cuda
-add_block
-add_grid
-show_threads
-hello_sm*
+*.o
+*.out
+*.exe
+
+# CUDA compiled files (executables without extension)
+01-cuda-cpp/add_cpu
+01-cuda-cpp/add_gpu_v1
+01-cuda-cpp/add_gpu_v2
+01-cuda-cpp/add_gpu_v3
+01-cuda-cpp/check_error_type
+01-cuda-cpp/error_handling
+01-cuda-cpp/explicit_memory
+01-cuda-cpp/gpu_init
+01-cuda-cpp/optimal_blocksize
+01-cuda-cpp/wrong_arch
+01-cuda-cpp/show_threads
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
 
 # Profiler reports
 *.nsys-rep
 *.sqlite
-
-# CUDA installer
-Miniconda*.sh
-cuda-keyring*.deb
-
-# Notebooks
-01-cuda-cpp/An_Even_Easier_Introduction_to_CUDA.ipynb
