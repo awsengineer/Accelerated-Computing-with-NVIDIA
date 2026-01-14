@@ -1,0 +1,18 @@
+# Compiled binaries
+add
+add_cuda
+add_block
+add_grid
+show_threads
+hello_sm*
+
+# Profiler reports
+*.nsys-rep
+*.sqlite
+
+# CUDA installer
+Miniconda*.sh
+cuda-keyring*.deb
+
+# Notebooks
+01-cuda-cpp/An_Even_Easier_Introduction_to_CUDA.ipynb
