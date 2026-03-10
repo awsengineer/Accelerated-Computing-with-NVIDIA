@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="light-theme">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUDA Grid, Blocks & Threads — Visual Explainer</title>
+<style>
+:root {
+  --font-body: system-ui, -apple-system, sans-serif;
+  --font-mono: 'SF Mono', Consolas, monospace;
+  --bg: #f8f9fa; --surface: #ffffff; --border: rgba(0,0,0,0.08);
+  --text: #1a1a2e; --text-dim: #6b7280;
+  --purple: #7c3aed; --green: #059669; --cyan: #0891b2; --amber: #d97706;
+  --purple-dim: rgba(124,58,237,0.1); --green-dim: rgba(5,150,105,0.1);
+  --cyan-dim: rgba(8,145,178,0.1); --amber-dim: rgba(217,119,6,0.1);
+}
+:root:not(.light-theme) {
+  --bg: #0d1117; --surface: #161b22; --border: rgba(255,255,255,0.06);
+  --text: #e6edf3; --text-dim: #8b949e;
+  --purple-dim: rgba(124,58,237,0.15); --green-dim: rgba(5,150,105,0.15);
+  --cyan-dim: rgba(8,145,178,0.15); --amber-dim: rgba(217,119,6,0.15);
+}
+:root:not(.light-theme) .mermaid-wrap { background: #1c2333; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); padding: 40px 24px;
+  background-image: radial-gradient(circle, var(--border) 1px, transparent 1px); background-size: 24px 24px; }
+
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 28px; margin-bottom: 8px; }
+.subtitle { color: var(--text-dim); font-size: 15px; margin-bottom: 32px; }
+
+.theme-toggle { position:fixed; top:16px; right:16px; background:var(--surface); border:1px solid var(--border);
+  border-radius:8px; padding:8px 12px; cursor:pointer; font-size:18px; z-index:100; }
+
+/* Code block */
+.code-block { background: var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:24px; font-family:var(--font-mono); font-size:14px; line-height:1.7; margin-bottom:32px;
+  overflow-x:auto; animation: fadeUp 0.4s ease-out both; }
+.kw { color: var(--purple); font-weight:600; }
+.fn { color: var(--cyan); }
+.num { color: var(--amber); }
+.cmt { color: var(--text-dim); font-style:italic; }
+
+/* Visual grid */
+.section { margin-bottom: 36px; animation: fadeUp 0.4s ease-out both; animation-delay: calc(var(--i,0)*0.08s); }
+.section h2 { font-size: 20px; margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+.section p { color: var(--text-dim); line-height:1.6; margin-bottom:16px; font-size:15px; }
+
+.badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-purple { background:var(--purple-dim); color:var(--purple); }
+.badge-green { background:var(--green-dim); color:var(--green); }
+.badge-cyan { background:var(--cyan-dim); color:var(--cyan); }
+.badge-amber { background:var(--amber-dim); color:var(--amber); }
+
+/* Matrix visual */
+.matrix-demo { display:grid; grid-template-columns: repeat(16,1fr); gap:2px; margin:16px 0; }
+.matrix-demo .cell { aspect-ratio:1; border-radius:3px; border:1px solid var(--border); position:relative;
+  transition: transform 0.2s, box-shadow 0.2s; cursor:default; }
+.matrix-demo .cell:hover { transform:scale(1.8); z-index:10; box-shadow:0 4px 16px rgba(0,0,0,0.2); }
+
+/* Block highlight */
+.block-grid { display:grid; grid-template-columns: repeat(8,1fr); gap:2px; padding:4px;
+  border:2px solid var(--cyan); border-radius:6px; background:var(--cyan-dim); margin:16px 0; max-width:280px; }
+.block-grid .tcell { aspect-ratio:1; background:var(--amber-dim); border:1px solid var(--amber);
+  border-radius:2px; font-size:8px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); color:var(--text-dim); }
+
+/* KPI row */
+.kpi-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap:16px; margin:24px 0; }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center;
+  animation: fadeScale 0.35s ease-out both; animation-delay: calc(var(--i,0)*0.06s); }
+.kpi .num { font-size:32px; font-weight:700; font-family:var(--font-mono); display:block; }
+.kpi .label { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+/* Analogy */
+.analogy { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px;
+  margin:24px 0; line-height:1.7; }
+.analogy h3 { margin-bottom:8px; }
+.analogy-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 32px; margin-top:16px; font-size:14px; }
+.analogy-grid dt { font-weight:600; color:var(--cyan); }
+.analogy-grid dd { color:var(--text-dim); }
+
+/* Mermaid */
+.mermaid-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px; margin:24px 0; overflow:hidden; }
+.mermaid-wrap iframe { width:100%; height:420px; border:none; border-radius:8px; }
+
+/* Flow arrow */
+.flow-arrow { display:flex; justify-content:center; color:var(--text-dim); font-size:24px; padding:4px 0; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeScale { from { opacity:0; transform:scale(0.92); } to { opacity:1; transform:scale(1); } }
+@media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" onclick="document.documentElement.classList.toggle('light-theme');localStorage.setItem('theme',document.documentElement.classList.contains('light-theme')?'light':'dark')">🌓</button>
+
+<div class="container">
+<h1>CUDA: Grid, Blocks & Threads</h1>
+<p class="subtitle">How one line of code launches 16,384 parallel workers on a GPU</p>
+
+<!-- GPU REALITY CHECK -->
+<div class="section" style="--i:0">
+<h2>First — How Many Cores Does a GPU Actually Have?</h2>
+<p>GPUs have a fixed number of CUDA cores — even NVIDIA's B200, one of the most powerful GPUs, has 18,944 per die. A mainstream GPU might have 2,000–5,000. If you launch more threads than cores available, the GPU schedules them in batches — running a group, then instantly swapping to the next (in nanoseconds). For our 16,384-thread example, a GPU with 4,096 cores would process them in ~4 waves. CUDA separates the <em>logical</em> thread count (what you ask for) from the <em>physical</em> execution (what the hardware does). You declare the work, the GPU figures out how to run it efficiently.</p>
+<p style="margin-top:16px"><strong>Why organize threads into blocks?</strong> GPU hardware is physically organized into groups called <em>streaming multiprocessors</em> (SMs). Each SM runs one or more blocks. Threads within a block can:</p>
+<ul style="margin:12px 0 0 20px; color:var(--text-dim); line-height:1.8">
+<li><strong>Share fast memory</strong> — 100× faster than global GPU memory</li>
+<li><strong>Synchronize</strong> — wait for each other with <code>__syncthreads()</code></li>
+<li><strong>Cooperate</strong> — divide sub-problems within the block</li>
+</ul>
+<p style="margin-top:12px; color:var(--text-dim)">Threads in <em>different</em> blocks can't do any of this. The block is the unit of cooperation.</p>
+</div>
+
+<div class="flow-arrow">↓</div>
+
+<!-- THE CODE -->
+<div class="section" style="--i:0">
+<h2>The Code</h2>
+<p style="margin-bottom:16px">We want to add two 128×128 matrices together: <code>C = A + B</code>. That's 16,384 additions. On a CPU you'd loop through them one by one. On a GPU, you launch 16,384 threads — one per element — and the GPU schedules them across its available cores in parallel batches. Even if the GPU has fewer than 16,384 cores, it handles the scheduling automatically.</p>
+<p style="margin-bottom:12px">CUDA uses a type called <code>dim3</code> to define how threads are organized. It always has three components (x, y, z), but unspecified dimensions default to 1. One type covers 1D, 2D, and 3D problems:</p>
+<div class="code-block" style="margin-bottom:16px; font-size:13px; padding:16px;">
+<span class="kw">dim3</span> a(<span class="num">256</span>);          <span class="cmt">// 1D: 256 × 1 × 1</span><br>
+<span class="kw">dim3</span> b(<span class="num">16</span>, <span class="num">16</span>);      <span class="cmt">// 2D: 16 × 16 × 1  ← our example</span><br>
+<span class="kw">dim3</span> c(<span class="num">4</span>, <span class="num">4</span>, <span class="num">4</span>);    <span class="cmt">// 3D: 4 × 4 × 4 (e.g. fluid simulation)</span>
+</div>
+<p style="margin-bottom:16px">For matrix addition we only need 2D, so here's the setup:</p>
+<div class="code-block">
+<span class="kw">dim3</span> blocks(<span class="num">16</span>, <span class="num">16</span>);    <span class="cmt">// 16×16 = 256 blocks</span><br>
+<span class="kw">dim3</span> threads(<span class="num">8</span>, <span class="num">8</span>);    <span class="cmt">// 8×8 = 64 threads per block</span><br>
+<span class="fn">MatAdd</span>&lt;&lt;&lt;blocks, threads&gt;&gt;&gt;(A, B, C); <span class="cmt">// Launch on GPU!</span>
+</div>
+<p>The <code>&lt;&lt;&lt; &gt;&gt;&gt;</code> syntax is CUDA-specific. It means: <code>&lt;&lt;&lt;how many blocks, how many threads per block&gt;&gt;&gt;</code>.</p>
+<p style="margin-top:12px"><strong>Why <code>dim3 threads(8, 8)</code> instead of just <code>64</code>?</strong> — With <code>64</code>, you still get <code>threadIdx.x</code> (0–63), but <code>threadIdx.y</code> is always 0 — it's a flat 1D index. To find the row and column you'd need: <code>row = threadIdx.x / 8; col = threadIdx.x % 8;</code>. With <code>dim3(8, 8)</code>, CUDA gives you <code>threadIdx.x</code> (0–7) and <code>threadIdx.y</code> (0–7) — a 2D coordinate that maps directly to matrix rows and columns without extra math.</p>
+<p style="margin-top:12px"><strong>Same for blocks — why <code>blocks(16, 16)</code> instead of <code>256</code>?</strong> — Same idea. With a 2D block layout, <code>blockIdx.x</code> and <code>blockIdx.y</code> give you the block's position in the grid. Combined with thread indices, the matrix position is one clean line: <code>row = blockIdx.y * 8 + threadIdx.y</code>. With a flat <code>256</code>, <code>blockIdx.y</code> would always be 0 and you'd convert back to 2D yourself. Rule of thumb: match the shape of your threads to the shape of your data.</p>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-row">
+<div class="kpi" style="--i:0"><span class="num" style="color:var(--green)">256</span><span class="label">Blocks in Grid<br>(16 × 16)</span></div>
+<div class="kpi" style="--i:1"><span class="num" style="color:var(--cyan)">64</span><span class="label">Threads per Block<br>(8 × 8)</span></div>
+<div class="kpi" style="--i:2"><span class="num" style="color:var(--amber)">16,384</span><span class="label">Total Threads<br>(256 × 64)</span></div>
+<div class="kpi" style="--i:3"><span class="num" style="color:var(--purple)">128×128</span><span class="label">Matrix Size<br>(one thread per element)</span></div>
+</div>
+
+<div class="flow-arrow">↓</div>
+
+<!-- HIERARCHY -->
+<div class="section" style="--i:1">
+<h2>The Hierarchy</h2>
+<p>GPUs organize work in three levels. Think of it like a company:</p>
+
+<div class="analogy">
+<div class="analogy-grid">
+<dt>🏢 Grid</dt><dd>The whole company — all the work. Here: 16×16 = 256 departments.</dd>
+<dt>🏠 Block</dt><dd>One department — a team that shares resources. Here: 8×8 = 64 people per team.</dd>
+<dt>👤 Thread</dt><dd>One worker — does exactly one task. Here: adds one matrix element.</dd>
+<dt>📋 The Task</dt><dd><code>C[row][col] = A[row][col] + B[row][col]</code></dd>
+</div>
+</div>
+</div>
+
+<div class="flow-arrow">↓</div>
+
+<!-- GRID VISUAL -->
+<div class="section" style="--i:2">
+<h2><span class="badge badge-green">Grid</span> 16×16 = 256 Blocks</h2>
+<p>Each colored square below is one block. The grid is the entire 128×128 matrix, divided into 8×8 chunks. Hover to zoom in.</p>
+<div class="matrix-demo" id="gridDemo"></div>
+</div>
+
+<div class="flow-arrow">↓</div>
+
+<!-- BLOCK VISUAL -->
+<div class="section" style="--i:3">
+<h2><span class="badge badge-cyan">One Block</span> 8×8 = 64 Threads</h2>
+<p>Zoom into one block. Each tiny cell is a thread — one worker doing one addition. Threads in the same block can share fast local memory and synchronize with each other.</p>
+<div class="block-grid" id="blockDemo"></div>
+</div>
+
+<div class="flow-arrow">↓</div>
+
+<!-- MERMAID -->
+<div class="section" style="--i:5">
+<h2>Flow Diagram</h2>
+<div class="mermaid-wrap">
+<iframe src="https://console.harmony.a2z.com/mermaid-live-editor/view#pako:eJyVlF1vmzAUhv-KRaSq1dwOQyAh2yqVRoombdq0st2UXhz8ASgERwa0ZFX_-wx2U5LtJlGIfD7ex-ccOzw7VDLuLJCTK9gWKFmmNUKrx9RJOzb3mf5lEKSd4K5Aq-8_0Rfoalp8zNT726_Q3jF2UbUfXp9clQyjrJJ0fZFrl30u7zCKMbq_Sp2nAY-ur2_R6sfn5XgfykO00gB0ScK0c102IyH6hLwgNMTmINfCgRATrY_7GLp0sXs1VDU32rmWhlPUFooDa_5Rem9Kcp7SHykDTIJztMtvyYOW39zc6LZ8tJGK295sakyGxKRvLBkgo87uH90n_dVb3NnVOxSb1YncO5KTkZwc5OQgJ6dy39YYeqbEcTt9Hq2gaZZcoHzbIVFW1WLCGY8Ex02r5JovJjPqA2fWvP5dsrZYeNsdprKSajEhQMDjx6j-5A2LEQE8OLDcIArD6BzWMFILo0LAqDB3HpHMOwdmmrc0wYVPZwcai2YzNzyHxmTbvLJ8MRXhgRVR8EEcs4hmWQeDpgClYL-YvuLDbObN3dGR6D-WPpGR2V-8frBvrpjg2MOxb2b05k8ITjyc-LbdkaC_s0PZae1g5Gy42kDJ-jfGc-q0Bd_wVBupk0GjV1ivKinXxjcgSmrcQ-4vUCVkFW_6BA3YqnIDan_fd2Q0EzF8jMaGY6kYV-MkM62jpITv2nGKnf6Q0nAqa3a6UaSvRmZrLms-jtnZDjEh6_ah_GP7JNPtzvgzoOtcya5m_6lcD6mO1_lJ5OWlnyF0rXzY11THWtVx7dGUvNCmgKrp7W7LoOXLEvRbeWPTXv4CKmHBYA" style="width:100%;height:480px;border:none;border-radius:8px;"></iframe>
+</div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// Theme persistence
+if(localStorage.getItem('theme')==='dark') document.documentElement.classList.remove('light-theme');
+
+// Generate grid visual
+const gridDemo = document.getElementById('gridDemo');
+const colors = ['var(--purple-dim)','var(--green-dim)','var(--cyan-dim)','var(--amber-dim)'];
+for(let r=0;r<16;r++) for(let c=0;c<16;c++) {
+  const d=document.createElement('div');
+  d.className='cell';
+  d.style.background=colors[(Math.floor(r/4)*4+Math.floor(c/4))%4];
+  d.title=`Block (${r},${c}) → threads cover rows ${r*8}-${r*8+7}, cols ${c*8}-${c*8+7}`;
+  gridDemo.appendChild(d);
+}
+
+// Generate block visual
+const blockDemo = document.getElementById('blockDemo');
+for(let r=0;r<8;r++) for(let c=0;c<8;c++) {
+  const d=document.createElement('div');
+  d.className='tcell';
+  d.textContent=`${r},${c}`;
+  d.title=`Thread (${r},${c}) → C[${r}][${c}] = A[${r}][${c}] + B[${r}][${c}]`;
+  blockDemo.appendChild(d);
+}
+</script>
+</body>
+</html>
