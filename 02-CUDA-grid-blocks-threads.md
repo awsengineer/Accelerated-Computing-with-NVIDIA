@@ -4,8 +4,8 @@ GitHub does not render this interactive HTML lesson correctly in the repository 
 
 Open the rendered version here:
 
-[Launch the interactive HTML preview](https://htmlpreview.github.io/?https://github.com/awsengineer/Accelerated-Computing-with-NVIDIA/blob/main/02-CUDA-grid-blocks-threads.html)
+[Launch the interactive HTML preview](https://htmlpreview.github.io/?https://github.com/awsengineer/Accelerated-Computing-with-NVIDIA/blob/main/resources/02-CUDA-grid-blocks-threads.html)
 
 Source file:
 
-[02-CUDA-grid-blocks-threads.html](https://github.com/awsengineer/Accelerated-Computing-with-NVIDIA/blob/main/02-CUDA-grid-blocks-threads.html)
+[resources/02-CUDA-grid-blocks-threads.html](https://github.com/awsengineer/Accelerated-Computing-with-NVIDIA/blob/main/resources/02-CUDA-grid-blocks-threads.html)
